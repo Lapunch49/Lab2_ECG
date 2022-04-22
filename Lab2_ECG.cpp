@@ -20,13 +20,17 @@ struct Matrix4f {
 static const char* VertShader = "#version 330\n\
 layout (location = 0) in vec3 Position;\n\
 uniform mat4 gWorld;\n\
+out vec4 Color;\n\
 void main()\n\
-{gl_Position = gWorld * vec4(Position, 2);}";
+{gl_Position = gWorld * vec4(Position, 2.0);\n\
+Color = vec4(clamp(Position, 0.0, 1.0), 1.0); }";
 
 static const char* PixelShader = "#version 330\n\
 out vec4 FragColor;\n\
+in vec4 Color;\n\
 void main()\n\
-{FragColor = vec4(0.2, 0.0, 0.8, 0.3);}";
+{//FragColor = vec4(0.2, 0.0, 0.8, 0.3);\n\
+FragColor = Color;}";
 
 void RenderSceneCB()
 {
