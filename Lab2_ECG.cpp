@@ -13,6 +13,8 @@ GLuint VBO;
 
 GLuint gWorldLocation;
 
+GLuint IBO;
+
 struct Matrix4f {
     float m[4][4];
 };
@@ -31,6 +33,9 @@ in vec4 Color;\n\
 void main()\n\
 {//FragColor = vec4(0.2, 0.0, 0.8, 0.3);\n\
 FragColor = Color;}";
+
+//static const char* ArrShader = "#version 330\n\
+//}";
 
 void RenderSceneCB()
 {
@@ -105,7 +110,7 @@ static void CompileShaders()
 
     AddShader(ShaderProgram, VertShader, GL_VERTEX_SHADER);
     AddShader(ShaderProgram, PixelShader , GL_FRAGMENT_SHADER);
-
+    
     GLint Success = 0;
     GLchar ErrorLog[1024] = { 0 };
 
@@ -139,7 +144,7 @@ int main(int argc, char** argv)
 
     glutInitWindowSize(700, 700);
     glutInitWindowPosition(100, 100);
-    glutCreateWindow("Lesson_6");
+    glutCreateWindow("Lesson_10");
     
     InitializeGlutCallbacks();
 
@@ -165,6 +170,30 @@ int main(int argc, char** argv)
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+
+    //создаем буфер индексов
+    glm::vec3 VerticesI[4];
+    VerticesI[0] = glm::vec3(-1.0f, -1.0f, 0.0f);
+    VerticesI[1] = glm::vec3(1.0f, -1.0f, 0.0f);
+    VerticesI[2] = glm::vec3(0.0f, -1.0f, 0.0f);
+    VerticesI[3] = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    unsigned int Indices[] = { 0, 3, 1,
+                           1, 3, 2,
+                           2, 3, 0,
+                           0, 2, 1 };
+
+    glGenBuffers(1, &IBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(VerticesI), VerticesI, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &IBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+
+    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
     CompileShaders();
 
