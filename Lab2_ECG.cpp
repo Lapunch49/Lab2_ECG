@@ -20,36 +20,6 @@ GLuint gWorldLocation;
 
 GLuint IBO;
 
-class Matrix4f {
-public:
-    float m[4][4];
-
-    Matrix4f()
-    {
-    }
-
-    inline void InitIdentity()
-    {
-        m[0][0] = 1.0f; m[0][1] = 0.0f; m[0][2] = 0.0f; m[0][3] = 0.0f;
-        m[1][0] = 0.0f; m[1][1] = 1.0f; m[1][2] = 0.0f; m[1][3] = 0.0f;
-        m[2][0] = 0.0f; m[2][1] = 0.0f; m[2][2] = 1.0f; m[2][3] = 0.0f;
-        m[3][0] = 0.0f; m[3][1] = 0.0f; m[3][2] = 0.0f; m[3][3] = 1.0f;
-    }
-    inline Matrix4f operator*(const Matrix4f& Right) const
-    {
-        Matrix4f Ret;
-        for (unsigned int i = 0; i < 4; i++) {
-            for (unsigned int j = 0; j < 4; j++) {
-                Ret.m[i][j] = Ret.m[i][0] * Right.m[0][j] +
-                    Ret.m[i][1] * Right.m[1][j] +
-                    Ret.m[i][2] * Right.m[2][j] +
-                    Ret.m[i][3] * Right.m[3][j];
-            }
-        }
-        return Ret;
-    }
-};
-
 struct {
     float FOV;
     float Width;
@@ -88,82 +58,91 @@ public:
         m_rotateInfo.y = RotateY;
         m_rotateInfo.z = RotateZ;
     }
-    void InitScaleTransform(Matrix4f& ScaleTrans) const  {
-        Matrix4f World;
-        World.m[0][0] = abs(sinf(m_scale.x)); World.m[0][1] = 0.0f;        World.m[0][2] = 0.0f;        World.m[0][3] = 0.0f;
-        World.m[1][0] = 0.0f;        World.m[1][1] = abs(sinf(m_scale.y)); World.m[1][2] = 0.0f;        World.m[1][3] = 0.0f;
-        World.m[2][0] = 0.0f;        World.m[2][1] = 0.0f;                 World.m[2][2] = 1.0f;           World.m[2][3] = 0.0f;
-        World.m[3][0] = 0.0f;        World.m[3][1] = 0.0f;                 World.m[3][2] = 0.0f;        World.m[3][3] = 1.0f;
+    void InitScaleTransform(glm::mat4& ScaleTrans) const  {
+        glm::mat4  World;
+        World[0][0] = abs(sinf(m_scale.x)); World[0][1] = 0.0f;        World[0][2] = 0.0f;        World[0][3] = 0.0f;
+        World[1][0] = 0.0f;        World[1][1] = abs(sinf(m_scale.y)); World[1][2] = 0.0f;        World[1][3] = 0.0f;
+        World[2][0] = 0.0f;        World[2][1] = 0.0f;                 World[2][2] = 1.0f;           World[2][3] = 0.0f;
+        World[3][0] = 0.0f;        World[3][1] = 0.0f;                 World[3][2] = 0.0f;        World[3][3] = 1.0f;
         ScaleTrans = World;
     }
-    void InitRotateTransform(Matrix4f& RotateTrans) const  {
+    void InitRotateTransform(glm::mat4 & RotateTrans) const  {
 
         const float x = m_rotateInfo.x * PI / 180.0f;
         const float y = m_rotateInfo.y * PI / 180.0f;
         const float z = m_rotateInfo.z * PI / 180.0f;
 
-        Matrix4f RotateX;
-        Matrix4f RotateY;
-        Matrix4f RotateZ;
+        glm::mat4  RotateX;
+        glm::mat4  RotateY;
+        glm::mat4  RotateZ;
 
-        RotateX.m[0][0] = 1.0f; RotateX.m[0][1] = 0.0f; RotateX.m[0][2] = 0.0f; RotateX.m[0][3] = 0.0f;
-        RotateX.m[1][0] = 0.0f; RotateX.m[1][1] = cosf(x); RotateX.m[1][2] = -sinf(x); RotateX.m[1][3] = 0.0f;
-        RotateX.m[2][0] = 0.0f; RotateX.m[2][1] = sinf(x); RotateX.m[2][2] = cosf(x); RotateX.m[2][3] = 0.0f;
-        RotateX.m[3][0] = 0.0f; RotateX.m[3][1] = 0.0f; RotateX.m[3][2] = 0.0f; RotateX.m[3][3] = 1.0f;
+        RotateX[0][0] = 1.0f; RotateX[0][1] = 0.0f; RotateX[0][2] = 0.0f; RotateX[0][3] = 0.0f;
+        RotateX[1][0] = 0.0f; RotateX[1][1] = cosf(x); RotateX[1][2] = -sinf(x); RotateX[1][3] = 0.0f;
+        RotateX[2][0] = 0.0f; RotateX[2][1] = sinf(x); RotateX[2][2] = cosf(x); RotateX[2][3] = 0.0f;
+        RotateX[3][0] = 0.0f; RotateX[3][1] = 0.0f; RotateX[3][2] = 0.0f; RotateX[3][3] = 1.0f;
 
-        RotateY.m[0][0] = cosf(y); RotateY.m[0][1] = 0.0f; RotateY.m[0][2] = -sinf(y); RotateY.m[0][3] = 0.0f;
-        RotateY.m[1][0] = 0.0f; RotateY.m[1][1] = 1.0f; RotateY.m[1][2] = 0.0f; RotateY.m[1][3] = 0.0f;
-        RotateY.m[2][0] = sinf(y); RotateY.m[2][1] = 0.0f; RotateY.m[2][2] = cosf(y); RotateY.m[2][3] = 0.0f;
-        RotateY.m[3][0] = 0.0f; RotateY.m[3][1] = 0.0f; RotateY.m[3][2] = 0.0f; RotateY.m[3][3] = 1.0f;
+        RotateY[0][0] = cosf(y); RotateY[0][1] = 0.0f; RotateY[0][2] = -sinf(y); RotateY[0][3] = 0.0f;
+        RotateY[1][0] = 0.0f; RotateY[1][1] = 1.0f; RotateY[1][2] = 0.0f; RotateY[1][3] = 0.0f;
+        RotateY[2][0] = sinf(y); RotateY[2][1] = 0.0f; RotateY[2][2] = cosf(y); RotateY[2][3] = 0.0f;
+        RotateY[3][0] = 0.0f; RotateY[3][1] = 0.0f; RotateY[3][2] = 0.0f; RotateY[3][3] = 1.0f;
 
-        RotateZ.m[0][0] = cosf(z); RotateZ.m[0][1] = -sinf(z); RotateZ.m[0][2] = 0.0f; RotateZ.m[0][3] = 0.0f;
-        RotateZ.m[1][0] = sinf(z); RotateZ.m[1][1] = cosf(z); RotateZ.m[1][2] = 0.0f; RotateZ.m[1][3] = 0.0f;
-        RotateZ.m[2][0] = 0.0f; RotateZ.m[2][1] = 0.0f; RotateZ.m[2][2] = 1.0f; RotateZ.m[2][3] = 0.0f;
-        RotateZ.m[3][0] = 0.0f; RotateZ.m[3][1] = 0.0f; RotateZ.m[3][2] = 0.0f; RotateZ.m[3][3] = 1.0f;
+        RotateZ[0][0] = cosf(z); RotateZ[0][1] = -sinf(z); RotateZ[0][2] = 0.0f; RotateZ[0][3] = 0.0f;
+        RotateZ[1][0] = sinf(z); RotateZ[1][1] = cosf(z); RotateZ[1][2] = 0.0f; RotateZ[1][3] = 0.0f;
+        RotateZ[2][0] = 0.0f; RotateZ[2][1] = 0.0f; RotateZ[2][2] = 1.0f; RotateZ[2][3] = 0.0f;
+        RotateZ[3][0] = 0.0f; RotateZ[3][1] = 0.0f; RotateZ[3][2] = 0.0f; RotateZ[3][3] = 1.0f;
 
         RotateTrans = RotateX * RotateY * RotateZ;
     }
 
-    void InitTranslationTransform(Matrix4f& TranslationTrans) const {
-        Matrix4f Move;
+    void InitTranslationTransform(glm::mat4 & TranslationTrans) const {
+        glm::mat4  Move;
 
-        Move.m[0][0] = 1.0f; Move.m[0][1] = 0.0f; Move.m[0][2] = 0.0f; Move.m[0][3] = sinf(m_worldPos.x);
-        Move.m[1][0] = 0.0f; Move.m[1][1] = 1.0f; Move.m[1][2] = 0.0f; Move.m[1][3] = sinf(m_worldPos.x);
-        Move.m[2][0] = 0.0f; Move.m[2][1] = 0.0f; Move.m[2][2] = 1.0f; Move.m[2][3] = sinf(m_worldPos.x);
-        Move.m[3][0] = 0.0f; Move.m[3][1] = 0.0f; Move.m[3][2] = 0.0f; Move.m[3][3] = 1.0f;
+        Move[0][0] = 1.0f; Move[0][1] = 0.0f; Move[0][2] = 0.0f; Move[0][3] = sinf(m_worldPos.x);
+        Move[1][0] = 0.0f; Move[1][1] = 1.0f; Move[1][2] = 0.0f; Move[1][3] = sinf(m_worldPos.x);
+        Move[2][0] = 0.0f; Move[2][1] = 0.0f; Move[2][2] = 1.0f; Move[2][3] = sinf(m_worldPos.x);
+        Move[3][0] = 0.0f; Move[3][1] = 0.0f; Move[3][2] = 0.0f; Move[3][3] = 1.0f;
 
         TranslationTrans = Move;
     }
 
-    void InitializeProjection(Matrix4f& matr) const {
+    void InitializeProjection(glm::mat4 & matr) const {
         const float k = proj.Width / proj.Height;
         const float Z_range = proj.Z_near - proj.Z_far;
         const float tanHalfFOV = tanf((proj.FOV / 2.0f) * PI / 180.0f);
 
-        matr.m[0][0] = 1.0f / (tanf((proj.FOV / 2.0f) * PI / 180.0f) * k); matr.m[0][1] = 0.0f; matr.m[0][2] = 0.0f; matr.m[0][3] = 0.0f;
-        matr.m[1][0] = 0.0f; matr.m[1][1] = 1.0f; matr.m[1][2] = 0.0f; matr.m[1][3] = 0.0f;
-        matr.m[2][0] = 0.0f; matr.m[2][1] = 0.0f; matr.m[2][2] = (-proj.Z_near - proj.Z_far) / Z_range; matr.m[2][3] = 2.0f * proj.Z_far * proj.Z_near / Z_range;
-        matr.m[3][0] = 0.0f; matr.m[3][1] = 0.0f; matr.m[3][2] = 1.0f; matr.m[3][3] = 0.0f;
+        matr[0][0] = 1.0f / (tanf((proj.FOV / 2.0f) * PI / 180.0f) * k); matr[0][1] = 0.0f; matr[0][2] = 0.0f; matr[0][3] = 0.0f;
+        matr[1][0] = 0.0f; matr[1][1] = 1.0f; matr[1][2] = 0.0f; matr[1][3] = 0.0f;
+        matr[2][0] = 0.0f; matr[2][1] = 0.0f; matr[2][2] = (-proj.Z_near - proj.Z_far) / Z_range; matr[2][3] = 2.0f * proj.Z_far * proj.Z_near / Z_range;
+        matr[3][0] = 0.0f; matr[3][1] = 0.0f; matr[3][2] = 1.0f; matr[3][3] = 0.0f;
+    }
+    void SetPerspectiveProj(float FOV, float width, float height, float zFar, float zNear) {
+        proj.FOV = FOV;
+        proj.Width = width;
+        proj.Height = height;
+        proj.Z_far = zFar;
+        proj.Z_near = zNear;
     }
 
-    const Matrix4f* GetTrans();
+    const glm::mat4 * GetTrans();
 private:
     glm::vec3 m_scale;
     glm::vec3 m_worldPos;
     glm::vec3 m_rotateInfo;
-    Matrix4f m_transformation;
+    glm::mat4  m_transformation;
 };
 
-const Matrix4f* Pipeline::GetTrans()
+const glm::mat4 * Pipeline::GetTrans()
 {
-    Matrix4f ScaleTrans, RotateTrans, TranslationTrans, ProjMatr;
+    glm::mat4  ScaleTrans, RotateTrans, TranslationTrans, ProjMatr;
 
     InitScaleTransform(ScaleTrans);
     InitRotateTransform(RotateTrans);
     InitTranslationTransform(TranslationTrans);
-    InitializeProjection(ProjMatr);
+    //InitializeProjection(ProjMatr);
 
-    m_transformation = ProjMatr * TranslationTrans * RotateTrans * ScaleTrans;
+    //m_transformation = ProjMatr * TranslationTrans * RotateTrans * ScaleTrans;
+
+    m_transformation = TranslationTrans * RotateTrans * ScaleTrans;
 
     return &m_transformation;
 }
@@ -181,8 +160,8 @@ static const char* PixelShader = "#version 330\n\
 out vec4 FragColor;\n\
 in vec4 Color;\n\
 void main()\n\
-{FragColor = vec4(0.2, 0.0, 0.8, 0.3);\n\
-//FragColor = Color;\n\
+{//FragColor = vec4(0.2, 0.0, 0.8, 0.3);\n\
+FragColor = Color;\n\
 }";
 
 void RenderSceneCB()
@@ -190,12 +169,15 @@ void RenderSceneCB()
     glClear(GL_COLOR_BUFFER_BIT);
 
     static float Scale = 0.0f;
-    Scale += 0.01f;
+    Scale += 0.001f;
 
     Pipeline p;
     p.Scale(sinf(Scale * 0.1f), sinf(Scale * 0.1f), sinf(Scale * 0.1f));
     p.WorldPos(sinf(Scale), 0.0f, 0.0f);
     p.Rotate(sinf(Scale) * 90.0f, sinf(Scale) * 90.0f, sinf(Scale) * 90.0f);
+
+
+    p.SetPerspectiveProj(30.0f, GLUT_WINDOW_WIDTH, GLUT_WINDOW_HEIGHT, 1.0f, 1000.0f);
 
     glUniformMatrix4fv(gWorldLocation, 1, GL_TRUE, (const GLfloat*)p.GetTrans());
 
