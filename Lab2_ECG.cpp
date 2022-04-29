@@ -10,6 +10,7 @@
 
 #define _USE_MATH_DEFINES
 #define ToRadian(x) ((x) * M_PI / 180.0f)
+
 #define ToDegree(x) ((x) * 180.0f / M_PI)
 
 const double PI = acos(-1.0); 
@@ -27,6 +28,12 @@ struct {
     float Z_near;
     float Z_far;
 } proj;
+
+struct {
+    glm::vec3 Pos;
+    glm::vec3 Target;
+    glm::vec3 Up;
+} m_camera;
 
 class Pipeline
 {
@@ -62,7 +69,7 @@ public:
         glm::mat4  World;
         World[0][0] = abs(sinf(m_scale.x)); World[0][1] = 0.0f;        World[0][2] = 0.0f;        World[0][3] = 0.0f;
         World[1][0] = 0.0f;        World[1][1] = abs(sinf(m_scale.y)); World[1][2] = 0.0f;        World[1][3] = 0.0f;
-        World[2][0] = 0.0f;        World[2][1] = 0.0f;                 World[2][2] = 1.0f;           World[2][3] = 0.0f;
+        World[2][0] = 0.0f;        World[2][1] = 0.0f;                 World[2][2] = 1.0f;        World[2][3] = 0.0f;
         World[3][0] = 0.0f;        World[3][1] = 0.0f;                 World[3][2] = 0.0f;        World[3][3] = 1.0f;
         ScaleTrans = World;
     }
@@ -105,6 +112,17 @@ public:
         TranslationTrans = Move;
     }
 
+    glm::mat4 InitTranslationTransform(float x, float y, float z) const {
+        glm::mat4  Move;
+
+        Move[0][0] = 1.0f; Move[0][1] = 0.0f; Move[0][2] = 0.0f; Move[0][3] = x;
+        Move[1][0] = 0.0f; Move[1][1] = 1.0f; Move[1][2] = 0.0f; Move[1][3] = y;
+        Move[2][0] = 0.0f; Move[2][1] = 0.0f; Move[2][2] = 1.0f; Move[2][3] = z;
+        Move[3][0] = 0.0f; Move[3][1] = 0.0f; Move[3][2] = 0.0f; Move[3][3] = 1.0f;
+
+        return Move;
+    }
+
     void InitializeProjection(glm::mat4 & matr) const {
         const float k = proj.Width / proj.Height;
         const float Z_range = proj.Z_near - proj.Z_far;
@@ -122,7 +140,41 @@ public:
         proj.Z_far = zFar;
         proj.Z_near = zNear;
     }
+    void Normalize(glm::vec3& Vec) {
+        const float Length = sqrtf(Vec.x * Vec.x + Vec.y* Vec.y + Vec.z * Vec.z);
+        Vec.x /= Length;
+        Vec.y /= Length;
+        Vec.z /= Length;
+    }
+    glm::vec3 Cross(glm::vec3& v1, glm::vec3&v2) const
+    {
+        const float _x = v1.y * v2.z - v1.z * v2.y;
+        const float _y = v1.z * v2.x - v1.x * v2.z;
+        const float _z = v1.x * v2.y - v1.y * v2.x;
 
+        return glm::vec3(_x, _y, _z);
+    }
+    glm::mat4 InitCameraTransform(glm::vec3& Target, const glm::vec3& Up)
+    {
+        glm::vec3 N = Target;
+        Normalize(N);
+        glm::vec3 U = Up;
+        Normalize(U);
+        U = Cross(U, Target);
+        glm::vec3 V = Cross(N, U);
+
+        glm::mat4 m;
+        m[0][0] = U.x; m[0][1] = U.y; m[0][2] = U.z; m[0][3] = 0.0f;
+        m[1][0] = V.x; m[1][1] = V.y; m[1][2] = V.z; m[1][3] = 0.0f;
+        m[2][0] = N.x; m[2][1] = N.y; m[2][2] = N.z; m[2][3] = 0.0f;
+        m[3][0] = 0.0f; m[3][1] = 0.0f; m[3][2] = 0.0f; m[3][3] = 1.0f;
+        return m;
+    }
+    void SetCamera(glm::vec3 CameraPos, glm::vec3 CameraTarget, glm::vec3 CameraUp) {
+        m_camera.Pos = CameraPos;
+        m_camera.Target = CameraTarget;
+        m_camera.Up = CameraUp;
+    }
     const glm::mat4 * GetTrans();
 private:
     glm::vec3 m_scale;
@@ -131,18 +183,24 @@ private:
     glm::mat4  m_transformation;
 };
 
-const glm::mat4 * Pipeline::GetTrans()
+const glm::mat4* Pipeline::GetTrans()
 {
-    glm::mat4  ScaleTrans, RotateTrans, TranslationTrans, ProjMatr;
+    glm::mat4 ScaleTrans, RotateTrans,
+        TranslationTrans, CameraTranslationTrans,
+        CameraRotateTrans, PersProjTrans;
 
     InitScaleTransform(ScaleTrans);
     InitRotateTransform(RotateTrans);
     InitTranslationTransform(TranslationTrans);
-    //InitializeProjection(ProjMatr);
+    CameraTranslationTrans = InitTranslationTransform(-m_camera.Pos.x, -m_camera.Pos.y, -m_camera.Pos.z);
+    CameraRotateTrans = InitCameraTransform(m_camera.Target, m_camera.Up);
 
-    //m_transformation = ProjMatr * TranslationTrans * RotateTrans * ScaleTrans;
+    //InitializeProjection(PersProjTrans);
 
-    m_transformation = TranslationTrans * RotateTrans * ScaleTrans;
+    m_transformation = //PersProjTrans * 
+        CameraRotateTrans *
+        CameraTranslationTrans * TranslationTrans *
+        RotateTrans * ScaleTrans;
 
     return &m_transformation;
 }
@@ -176,8 +234,13 @@ void RenderSceneCB()
     p.WorldPos(sinf(Scale), 0.0f, 0.0f);
     p.Rotate(sinf(Scale) * 90.0f, sinf(Scale) * 90.0f, sinf(Scale) * 90.0f);
 
+    //p.SetPerspectiveProj(1.0f, GLUT_WINDOW_WIDTH, GLUT_WINDOW_HEIGHT, -0.5f, 0.5f);
 
-    p.SetPerspectiveProj(30.0f, GLUT_WINDOW_WIDTH, GLUT_WINDOW_HEIGHT, 1.0f, 1000.0f);
+    glm::vec3 CameraPos(1.0f, 1.0f, 1.0f);
+    glm::vec3 CameraTarget(0.45f, 0.0f, 1.0f);
+    glm::vec3 CameraUp(0.0f, 1.0f, 0.0f);
+
+    p.SetCamera(CameraPos, CameraTarget, CameraUp);
 
     glUniformMatrix4fv(gWorldLocation, 1, GL_TRUE, (const GLfloat*)p.GetTrans());
 
@@ -281,7 +344,8 @@ int main(int argc, char** argv)
     
     InitializeGlutCallbacks();
 
-    glClearColor(0.8f, 0.3f, 0.0f, 0.0f);
+    //glClearColor(0.8f, 0.3f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     // lesson2
     
@@ -293,22 +357,17 @@ int main(int argc, char** argv)
     }
 
     // создаем вершинный буфер
-    glm::vec3 Vertices[3];
+    glm::vec3 Vertices[4];
     Vertices[0] = glm::vec3(-1.0f, -1.0f, 0.0f);
-    Vertices[1] = glm::vec3(1.0f, -1.0f, 0.0f);
-    Vertices[2] = glm::vec3(0.0f, 1.0f, 0.0f);
+    Vertices[1] = glm::vec3(0.0f, 0.0f, 2.0f);//(1.0f, -1.0f, 0.0f);
+    Vertices[2] = glm::vec3(1.0f, -1.0f, 0.0f);//(0.0f, 0.0f, 1.0f);
+    Vertices[3] = glm::vec3(0.0f, 1.0f, 0.0f);//(0.0f, 1.0f, 0.0f);
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
 
     //создаем буфер индексов
-    glm::vec3 VerticesI[4];
-    VerticesI[0] = glm::vec3(-1.0f, -1.0f, 0.0f);
-    VerticesI[1] = glm::vec3(1.0f, -1.0f, 0.0f);
-    VerticesI[2] = glm::vec3(0.0f, -1.0f, 0.0f);
-    VerticesI[3] = glm::vec3(0.0f, 1.0f, 0.0f);
-
     unsigned int Indices[] = { 0, 3, 1,
                            1, 3, 2,
                            2, 3, 0,
@@ -316,7 +375,7 @@ int main(int argc, char** argv)
 
     glGenBuffers(1, &IBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(VerticesI), VerticesI, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
 
     glGenBuffers(1, &IBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
